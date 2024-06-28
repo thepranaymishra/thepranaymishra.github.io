@@ -1,56 +1,88 @@
-const express = require('express');
-const nodemailer = require('nodemailer');
-const cors = require('cors');
+const { RateLimiterMemory } = require("rate-limiter-flexible");
+const express = require("express");
+const cors = require("cors");
+const fs = require("fs");
+const handlebars = require("handlebars");
+const path = require("path");
+const logger = require("./middlewares/logger");
+const { Resend } = require("resend");
+require("dotenv").config();
+
 const app = express();
 
-const { RateLimiterMemory } = require('rate-limiter-flexible');
+// Read the Handlebars template
+const templatePath = path.join(__dirname, "emailTemplate.hbs");
+const templateSource = fs.readFileSync(templatePath, "utf8");
 
-require('dotenv').config();
+// Compile the template
+const template = handlebars.compile(templateSource);
 
 app.use(cors());
 app.use(express.json());
-
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USERNAME,
-        pass: process.env.EMAIL_PASSWORD,
-    },
-});
+app.use(logger);
 
 const rateLimiter = new RateLimiterMemory({
-    points: 3,
-    duration: 60 * 60 * 24
+  points: 3,
+  duration: 60 * 60 * 24,
 });
 
-app.post('/send-email', async (req, res) => {
+app.post("/send-email", async (req, res) => {
+  try {
     const { name, email, message } = req.body;
+    if (!name || !email || !message) {
+      return res.status(400).json({
+        success: false,
+        message: "Please fill all the fields",
+      });
+    }
+    // Render the template with the dynamic data
+    const emailData = { name, email, message };
+    const emailHtml = template(emailData);
 
-    rateLimiter.consume(req.ip, 1)
-        .then((rateLimiterRes) => {
-            // 2 points consumed
-            console.log(`Rate limit success for ${req.ip}`);
-            const mailOptions = {
-                from: process.env.EMAIL_USERNAME,
-                to: process.env.YOUR_EMAIL,
-                subject: 'New Portfolio Connect',
-                text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
-            };
+    await rateLimiter.consume(req.ip, 1);
+    console.log(`Rate limit success for ${req.ip}`);
+    const resend = new Resend(process.env.RESEND_API);
 
-            transporter.sendMail(mailOptions, (error, info) => {
-                if (error) {
-                    return res.status(500).send(error.toString());
-                }
-                res.status(200).send({ "Email sent": info.response });
-            });
-        })
-        .catch((rateLimiterRes) => {
-            res.status(429).send({ "mgs": 'Too many requests' });
+    try {
+      let response = await resend.emails.send({
+        from: "Pranay-Portfolio <onboarding@resend.dev>",
+        to: ["pmcanvas4501@gmail.com"],
+        subject: "New Portfolio Connect",
+        html: emailHtml,
+        headers: {
+          "X-Entity-Ref-ID": "123456789",
+        },
+        tags: [
+          {
+            name: "contact",
+            value: "contact_email",
+          },
+        ],
+      });
+
+      if (response.error) {
+        return res.status(400).json({
+          success: false,
+          message: response.error.message,
         });
+      }
+      return res.status(200).json({
+        success: true,
+        message: "Email sent successfully",
+        data: response,
+      });
+    } catch (emailError) {
+      return res
+        .status(500)
+        .json({ success: false, message: emailError.message });
+    }
+  } catch (rateLimitError) {
+    return res
+      .status(429)
+      .json({ success: false, message: "Too many requests" });
+  }
 });
 
 app.listen(3000, () => {
-    console.log('Server is running on http://localhost:3000');
+  console.log("Server is running on http://localhost:3000");
 });
-
-
