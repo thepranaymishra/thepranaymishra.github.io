@@ -6,6 +6,7 @@ const handlebars = require("handlebars");
 const path = require("path");
 const logger = require("./middlewares/logger");
 const { Resend } = require("resend");
+const cron = require("node-cron");
 require("dotenv").config();
 
 const app = express();
@@ -24,6 +25,10 @@ app.use(logger);
 const rateLimiter = new RateLimiterMemory({
   points: 3,
   duration: 60 * 60 * 24,
+});
+
+app.get("/health", (req, res) => {
+  return res.send("Health is okay");
 });
 
 app.post("/send-email", async (req, res) => {
@@ -82,6 +87,20 @@ app.post("/send-email", async (req, res) => {
       .json({ success: false, message: "Too many requests" });
   }
 });
+
+const job = cron.schedule("*/14 * * * *", () => {
+  console.log("running a task every 14 minutes");
+  fetch(`${process.env.BACKEND_HOSTED_URL}/health`)
+    .then(() => {
+      console.log("Health Check Passed");
+    })
+    .catch((err) => {
+      console.log(err);
+      console.log("Health Check Failed");
+    });
+});
+
+job.start();
 
 app.listen(3000, () => {
   console.log("Server is running on http://localhost:3000");
