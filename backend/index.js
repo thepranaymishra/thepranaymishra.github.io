@@ -89,6 +89,7 @@ app.post("/send-email", (req, res) => {
         });
     })
     .catch((rateLimitError) => {
+      console.log(rateLimitError);
       return res.status(429).json({
         success: false,
         message: "Too many requests",
