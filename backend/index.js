@@ -11,12 +11,15 @@ require("dotenv").config();
 
 const app = express();
 
-// Read the Handlebars template
-const templatePath = path.join(__dirname, "emailTemplate.hbs");
-const templateSource = fs.readFileSync(templatePath, "utf8");
-
-// Compile the template
-const template = handlebars.compile(templateSource);
+let template;
+try {
+  // Read and compile the Handlebars template
+  const templatePath = path.join(__dirname, "emailTemplate.hbs");
+  const templateSource = fs.readFileSync(templatePath, "utf8");
+  template = handlebars.compile(templateSource);
+} catch (error) {
+  console.error("Error reading or compiling the template:", error);
+}
 
 app.use(cors());
 app.use(express.json());
@@ -24,79 +27,83 @@ app.use(logger);
 
 const rateLimiter = new RateLimiterMemory({
   points: 10,
-  duration: 60 * 60 * 24,
+  duration: 60 * 15,
 });
 
 app.get("/health", (req, res) => {
   return res.send("Health is okay");
 });
 
-app.post("/send-email", async (req, res) => {
-  try {
-    const { name, email, message } = req.body;
-    if (!name || !email || !message) {
-      return res.status(400).json({
-        success: false,
-        message: "Please fill all the fields",
-      });
-    }
-    // Render the template with the dynamic data
-    const emailData = { name, email, message };
-    const emailHtml = template(emailData);
-
-    await rateLimiter.consume(req.ip, 1);
-    console.log(`Rate limit success for ${req.ip}`);
-    const resend = new Resend(process.env.RESEND_API);
-
-    try {
-      let response = await resend.emails.send({
-        from: "Pranay-Portfolio <onboarding@resend.dev>",
-        to: ["pmcanvas4501@gmail.com"],
-        subject: "New Portfolio Connect",
-        html: emailHtml,
-        headers: {
-          "X-Entity-Ref-ID": "123456789",
-        },
-        tags: [
-          {
-            name: "contact",
-            value: "contact_email",
-          },
-        ],
-      });
-
-      if (response.error) {
-        return res.status(400).json({
-          success: false,
-          message: response.error.message,
-        });
-      }
-      return res.status(200).json({
-        success: true,
-        message: "Email sent successfully",
-        data: response,
-      });
-    } catch (emailError) {
-      return res
-        .status(500)
-        .json({ success: false, message: emailError.message });
-    }
-  } catch (rateLimitError) {
-    return res
-      .status(429)
-      .json({ success: false, message: "Too many requests" });
+app.post("/send-email", (req, res) => {
+  const { name, email, message } = req.body;
+  if (!name || !email || !message) {
+    return res.status(400).json({
+      success: false,
+      message: "Please fill all the fields",
+    });
   }
+
+  // Render the template with the dynamic data
+  const emailData = { name, email, message };
+  const emailHtml = template(emailData);
+
+  rateLimiter
+    .consume(req.ip, 1)
+    .then(() => {
+      console.log(`Rate limit success for ${req.ip}`);
+      const resend = new Resend(process.env.RESEND_API);
+      resend.emails
+        .send({
+          from: "Pranay-Portfolio <onboarding@resend.dev>",
+          to: ["pmcanvas4501@gmail.com"],
+          subject: "New Portfolio Connect",
+          html: emailHtml,
+          headers: {
+            "X-Entity-Ref-ID": "123456789",
+          },
+          tags: [
+            {
+              name: "contact",
+              value: "contact_email",
+            },
+          ],
+        })
+        .then((response) => {
+          if (response.error) {
+            return res.status(400).json({
+              success: false,
+              message: response.error.message,
+            });
+          }
+          return res.status(200).json({
+            success: true,
+            message: "Email sent successfully",
+            data: response,
+          });
+        })
+        .catch((emailError) => {
+          return res.status(500).json({
+            success: false,
+            message: emailError.message,
+          });
+        });
+    })
+    .catch((rateLimitError) => {
+      return res.status(429).json({
+        success: false,
+        message: "Too many requests",
+      });
+    });
 });
 
 const job = cron.schedule("*/14 * * * *", () => {
-  console.log("running a task every 14 minutes");
+  console.log("Running a task every 14 minutes");
   fetch(`${process.env.BACKEND_HOSTED_URL}/health`)
     .then(() => {
       console.log("Health Check Passed");
     })
     .catch((err) => {
-      console.log(err);
-      console.log("Health Check Failed");
+      console.error("Health Check Failed", err);
     });
 });
 
