@@ -23,7 +23,7 @@ app.use(express.json());
 app.use(logger);
 
 const rateLimiter = new RateLimiterMemory({
-  points: 3,
+  points: 10,
   duration: 60 * 60 * 24,
 });
 
