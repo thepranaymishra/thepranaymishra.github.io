@@ -34,7 +34,7 @@ app.get("/health", (req, res) => {
   return res.send("Health is okay");
 });
 
-app.post("/send-email", (req, res) => {
+app.post("/send-email", async (req, res) => {
   const { name, email, message } = req.body;
   if (!name || !email || !message) {
     return res.status(400).json({
@@ -48,32 +48,24 @@ app.post("/send-email", (req, res) => {
   const emailHtml = template(emailData);
 
   const resend = new Resend(process.env.RESEND_API);
-  resend.emails
-    .send({
-      from: "Pranay-Portfolio <onboarding@resend.dev>",
-      to: ["pmcanvas4501@gmail.com"],
-      subject: "New Portfolio Connect",
-      html: emailHtml,
-    })
-    .then((response) => {
-      if (response.error) {
-        return res.status(400).json({
-          success: false,
-          message: response.error.message,
-        });
-      }
-      return res.status(200).json({
-        success: true,
-        message: "Email sent successfully",
-        data: response,
-      });
-    })
-    .catch((emailError) => {
-      return res.status(500).json({
-        success: false,
-        message: emailError.message,
-      });
+  let response = await resend.emails.send({
+    from: "Pranay-Portfolio <onboarding@resend.dev>",
+    to: ["pmcanvas4501@gmail.com"],
+    subject: "New Portfolio Connect",
+    html: emailHtml,
+  });
+
+  if (response.error) {
+    return res.status(400).json({
+      success: false,
+      message: response.error.message,
     });
+  }
+  return res.status(200).json({
+    success: true,
+    message: "Email sent successfully",
+    data: response,
+  });
 
   // rateLimiter
   //   .consume(req.ip, 1)
