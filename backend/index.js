@@ -5,7 +5,7 @@ const fs = require("fs");
 const handlebars = require("handlebars");
 const path = require("path");
 const logger = require("./middlewares/logger");
-const { Resend } = require("resend");
+const nodemailer = require("nodemailer");
 const cron = require("node-cron");
 require("dotenv").config();
 
@@ -13,7 +13,6 @@ const app = express();
 
 let template;
 try {
-  // Read and compile the Handlebars template
   const templatePath = path.join(__dirname, "emailTemplate.hbs");
   const templateSource = fs.readFileSync(templatePath, "utf8");
   template = handlebars.compile(templateSource);
@@ -30,11 +29,20 @@ const rateLimiter = new RateLimiterMemory({
   duration: 60 * 15,
 });
 
+// Set up nodemailer transporter
+const transporter = nodemailer.createTransport({
+  service: "Gmail",
+  auth: {
+    user: process.env.EMAIL_USERNAME,
+    pass: process.env.EMAIL_PASSWORD,
+  },
+});
+
 app.get("/health", (req, res) => {
   return res.send("Health is okay");
 });
 
-app.post("/send-email", async (req, res) => {
+app.post("/send-email", (req, res) => {
   const { name, email, message } = req.body;
   if (!name || !email || !message) {
     return res.status(400).json({
@@ -43,43 +51,44 @@ app.post("/send-email", async (req, res) => {
     });
   }
 
-  // Render the template with the dynamic data
   const emailData = { name, email, message };
   const emailHtml = template(emailData);
 
-  const resend = new Resend(process.env.RESEND_API);
-  let response = await resend.emails.send({
-    from: "Pranay-Portfolio <onboarding@resend.dev>",
-    to: ["pmcanvas4501@gmail.com"],
-    subject: "New Portfolio Connect",
-    html: emailHtml,
-  });
+  const ip = req.headers["x-forwarded-for"] || req.ip;
 
-  if (response.error) {
-    return res.status(400).json({
-      success: false,
-      message: response.error.message,
+  rateLimiter
+    .consume(ip, 1)
+    .then(() => {
+      console.log(`Rate limit success for ${ip}`);
+
+      const mailOptions = {
+        from: "Pranay-Portfolio <onboarding@resend.dev>",
+        to: "pmcanvas4501@gmail.com",
+        subject: "New Portfolio Connect",
+        html: emailHtml,
+      };
+
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          return res.status(500).json({
+            success: false,
+            message: error.message,
+          });
+        } else {
+          return res.status(200).json({
+            success: true,
+            message: "Email sent successfully",
+            data: info.response,
+          });
+        }
+      });
+    })
+    .catch((rateLimitError) => {
+      return res.status(429).json({
+        success: false,
+        message: "Too many requests",
+      });
     });
-  }
-  return res.status(200).json({
-    success: true,
-    message: "Email sent successfully",
-    data: response,
-  });
-
-  // rateLimiter
-  //   .consume(req.ip, 1)
-  //   .then(() => {
-  //     console.log(`Rate limit success for ${req.ip}`);
-
-  //   })
-  //   .catch((rateLimitError) => {
-  //     console.log(rateLimitError);
-  //     return res.status(429).json({
-  //       success: false,
-  //       message: "Too many requests",
-  //     });
-  //   });
 });
 
 const job = cron.schedule("*/14 * * * *", () => {
