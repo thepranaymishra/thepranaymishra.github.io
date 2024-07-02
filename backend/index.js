@@ -54,15 +54,6 @@ app.post("/send-email", (req, res) => {
       to: ["pmcanvas4501@gmail.com"],
       subject: "New Portfolio Connect",
       html: emailHtml,
-      headers: {
-        "X-Entity-Ref-ID": "123456789",
-      },
-      tags: [
-        {
-          name: "contact",
-          value: "contact_email",
-        },
-      ],
     })
     .then((response) => {
       if (response.error) {
