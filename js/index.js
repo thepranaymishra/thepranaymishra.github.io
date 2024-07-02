@@ -64,7 +64,7 @@ contactForm.addEventListener("submit", (e) => {
     };
     submitBtn.innerHTML = `<div class="loader"></div>`;
 
-    fetch("https://portfolio-1xro.onrender.com//send-email", {
+    fetch("https://portfolio-1xro.onrender.com/send-email", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
