@@ -47,54 +47,56 @@ app.post("/send-email", (req, res) => {
   const emailData = { name, email, message };
   const emailHtml = template(emailData);
 
-  rateLimiter
-    .consume(req.ip, 1)
-    .then(() => {
-      console.log(`Rate limit success for ${req.ip}`);
-      const resend = new Resend(process.env.RESEND_API);
-      resend.emails
-        .send({
-          from: "Pranay-Portfolio <onboarding@resend.dev>",
-          to: ["pmcanvas4501@gmail.com"],
-          subject: "New Portfolio Connect",
-          html: emailHtml,
-          headers: {
-            "X-Entity-Ref-ID": "123456789",
-          },
-          tags: [
-            {
-              name: "contact",
-              value: "contact_email",
-            },
-          ],
-        })
-        .then((response) => {
-          if (response.error) {
-            return res.status(400).json({
-              success: false,
-              message: response.error.message,
-            });
-          }
-          return res.status(200).json({
-            success: true,
-            message: "Email sent successfully",
-            data: response,
-          });
-        })
-        .catch((emailError) => {
-          return res.status(500).json({
-            success: false,
-            message: emailError.message,
-          });
-        });
+  const resend = new Resend(process.env.RESEND_API);
+  resend.emails
+    .send({
+      from: "Pranay-Portfolio <onboarding@resend.dev>",
+      to: ["pmcanvas4501@gmail.com"],
+      subject: "New Portfolio Connect",
+      html: emailHtml,
+      headers: {
+        "X-Entity-Ref-ID": "123456789",
+      },
+      tags: [
+        {
+          name: "contact",
+          value: "contact_email",
+        },
+      ],
     })
-    .catch((rateLimitError) => {
-      console.log(rateLimitError);
-      return res.status(429).json({
+    .then((response) => {
+      if (response.error) {
+        return res.status(400).json({
+          success: false,
+          message: response.error.message,
+        });
+      }
+      return res.status(200).json({
+        success: true,
+        message: "Email sent successfully",
+        data: response,
+      });
+    })
+    .catch((emailError) => {
+      return res.status(500).json({
         success: false,
-        message: "Too many requests",
+        message: emailError.message,
       });
     });
+
+  // rateLimiter
+  //   .consume(req.ip, 1)
+  //   .then(() => {
+  //     console.log(`Rate limit success for ${req.ip}`);
+
+  //   })
+  //   .catch((rateLimitError) => {
+  //     console.log(rateLimitError);
+  //     return res.status(429).json({
+  //       success: false,
+  //       message: "Too many requests",
+  //     });
+  //   });
 });
 
 const job = cron.schedule("*/14 * * * *", () => {
