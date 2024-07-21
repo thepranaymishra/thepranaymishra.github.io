@@ -81,6 +81,7 @@ body {
   z-index: 100;
 }
 #resume-button-1 {
+  border-radius: 2rem 0.5rem 2rem 0.5rem;
   color: black;
   display: inline-block;
   text-align: center;
@@ -88,7 +89,6 @@ body {
   background: var(--main-color);
   box-shadow: 0 0 1rem var(--main-color);
   font-size: 3rem;
-  font-weight: 800;
   width: max-content;
   margin: 0 2rem;
   animation: flicker 1.5s infinite alternate;
@@ -113,9 +113,23 @@ body {
 
 #resume-button-2 {
   animation: flicker 1.5s infinite alternate;
+  border-radius: 2rem 0.5rem 2rem 0.5rem;
+  color: black;
+  display: inline-block;
+  text-align: center;
+  padding: 1rem 2rem;
+  background: var(--main-color);
+  box-shadow: 0 0 1rem var(--main-color);
+  font-size: 2rem;
+  width: max-content;
+  transition: 200ms ease-in-out;
+}
+#resume-button-2 a {
+  color: rgb(0, 0, 0);
 }
 
 #resume-button-2:hover {
+  box-shadow: 0;
   animation: stopFlicker 0s forwards;
 }
 
@@ -328,7 +342,7 @@ span {
 }
 
 .about-content h2 {
-  text-align: left;
+  text-align: center;
   line-height: 1.2;
 }
 .about-content h3 {
@@ -345,21 +359,40 @@ span {
 }
 
 .services-container {
-  display: flex;
+  display: grid;
+  gap: 2rem;
   justify-content: center;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 2rem;
 }
 
 .services-container .services-box {
-  flex: 1 1 30rem;
   background: var(--second-bg-color);
   padding: 3rem 2rem 4rem;
   border-radius: 2rem;
   text-align: center;
   border: 0.2rem solid var(--bg-color);
   transition: 0.5s ease;
+}
+
+/* Mobile: 2 columns */
+@media (max-width: 600px) {
+  .services-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Tablet: 3 columns */
+@media (min-width: 601px) and (max-width: 1024px) {
+  .services-container {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Laptop: 4 columns */
+@media (min-width: 1025px) {
+  .services-container {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .services-box i {
