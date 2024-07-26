@@ -1,5 +1,13 @@
 # 💫 About Me:
-<br>Hello there! 👋 I'm Pranay,<br> a passionate full-stack web developer hailing from India. I recently completed an intensive 10-month full-stack web development course at Masai School, where I delved deep into technologies like HTML, CSS, JavaScript, Node.js, MongoDB, Express.js, React, MySQL, and Data Structures. <br><br>Throughout the course, I honed my skills by building a variety of HTML/React-based websites and web applications. My journey in web development has been an exhilarating ride, and I'm eager to continue exploring new technologies and creating innovative solutions. <br><br>Feel free to explore my repositories and connect with me. Let's build amazing things together! 🚀<br>
+<br>Hello there! 👋 I'm Pranay,
+
+A passionate full-stack web developer from India. I recently completed an intensive 10-month full-stack web development course at Masai School, where I mastered technologies such as HTML, CSS, JavaScript, Node.js, MongoDB, Express.js, React, MySQL, and Data Structures.
+
+I gained practical experience during my 3-month stint at ASH IT SERVICE, where I developed responsive user interfaces, built and maintained server-side applications, managed databases, and collaborated with cross-functional teams to deliver high-quality projects.
+
+Throughout my journey, I've built a variety of HTML/React-based websites and web applications, and I am always eager to explore new technologies and create innovative solutions.
+
+Feel free to explore my repositories and connect with me. Let's build amazing things together! 🚀<br>
 
 
 ## 🌐 Socials:
